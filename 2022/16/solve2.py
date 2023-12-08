@@ -1,5 +1,6 @@
 from functools import cache
 from collections import defaultdict, Counter, deque
+from queue import PriorityQueue
 from math import *
 from ast import literal_eval
 import sys, os
@@ -14,17 +15,31 @@ lowercase = string.ascii_lowercase
 uppercase = string.ascii_uppercase
 
 
-def gen_split_after(char: str):
+def gen_split_after(sub: str):
     def inner(arr: str):
-        return arr[arr.index(char) + len(char) :].strip()
+        return arr[arr.index(sub) + len(sub):].strip()
     return inner
 a_colon = gen_split_after(":")
 
 ############################################
-# Functions involving Grouping (g_)
+# Functions involving Grouping 
 ############################################
-def g_every_n(arr: list, n: int):
+def group_every_n(arr: list, n: int):
     return zip(*(iter(arr),) * n)
+
+############################################
+# Functions involving Graphs (g_) 
+############################################
+def g_shortest_path_to_all_from_source(G, start):
+    ret = {start: 0}
+    queue = deque([(0, start)])
+    while queue:
+        dist, node = queue.popleft()
+        for neighbor in G[node]:
+            if neighbor not in ret:
+                queue.append((dist+1, neighbor))
+                ret[neighbor] = dist+1
+    return ret
 
 ############################################
 # Functions for Parsing strings (p_)
@@ -90,15 +105,15 @@ def r_intersect(a: range, b: range):
 # Functions involving matrices (m_)
 ############################################
 def m_print(arr: list):
-    if isinstance(arr[0], str):
-        for a in arr:
-            print(a)
-    elif isinstance(arr[0], list) and isinstance(arr[0][0], str):
-        for a in arr:
-            print("".join(a))
-    else:
-        for a in arr:
-            print(a)
+    for a in arr:
+        print(a)
+
+############################################
+# Functions involving dictionaries (d_)
+############################################
+def d_print(dic: dict):
+    for a in dic:
+        print(a, dic[a])
 
 input_file = "input" if len(sys.argv) == 1 else sys.argv[1]
 raw_data = open(input_file).read()
@@ -108,5 +123,67 @@ height = len(data)
 width = len(data[0])
 
 
+a = gen_split_after("Valve ")
+b = gen_split_after("to valves ")
+c = gen_split_after('to valve ')
+
+flow_rates = {}
+data = [x.split('; ') for x in data]
+for arr in data:
+    flow_rates[a(arr[0])[:2]] = int(arr[0].split('=')[-1])
+    arr[0] = a(arr[0])[:2]
+    try:
+        arr[1] = b(arr[1]).split(', ')
+    except: 
+        arr[1] = [c(arr[1])]
+
+graph = {}
+for k, v in data:
+    graph[k] = v
+
+dist_map = {}
+
+for k in graph:
+    spdict = g_shortest_path_to_all_from_source(graph, k)
+    print(spdict)
+    for d in spdict:
+        if flow_rates[d] > 0:
+            dist_map[k,d] = spdict[d] 
+
+print(dist_map)
+
+stack = []
+stack.append(('AA', 0, 0, set(), False))
+
+best = 0
+while stack:
+    # Now checking cur_pos, at time, having accumulated flow pressure, and opened seen
+    cur_pos, time, flow, seen, is_elephant = stack.pop()
+    
+    # 1 time step of flow with this many seen generates additional_flow count
+    additional_flow = sum(flow_rates[x] for x in seen)
+
+    # if the current flow is 
+    if flow > best:
+        best = flow
+    
+    visited_something = False
+    for neighbor in graph:
+        if neighbor not in seen and (cur_pos, neighbor) in dist_map:
+            distance = dist_map[cur_pos, neighbor]
+            if time + distance+1 > 26:
+                continue
+
+            _seen = seen.copy()
+            _seen.add(neighbor)
+            visited_something = True
+            stack.append((neighbor, time + distance+1, flow+((distance+1)*additional_flow), _seen))
+
+    # if there was nothing to visit, then we are done, just wait for the rest of the time
+    if not visited_something:
+        best = max(best, flow + ((26 - time)*additional_flow))
+    
+    
 
 
+print(best)

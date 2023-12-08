@@ -6,10 +6,7 @@ from ast import literal_eval
 import sys, os
 import re
 import string
-
-
-# Uncomment next line to disable prints
-# print = lambda *x: ...
+import inspect
 
 lowercase = string.ascii_lowercase
 uppercase = string.ascii_uppercase
@@ -20,6 +17,37 @@ def gen_split_after(char: str):
         return arr[arr.index(char) + len(char) :].strip()
     return inner
 a_colon = gen_split_after(":")
+
+############################################
+# Postfix (then)
+############################################
+class CustomOperator:
+    def __init__(self, callback):
+        self.callback = callback
+    def __rmatmul__(self, other):
+        return CustomOperator.I(self, other)
+    class I:
+        def __init__(self, parent, value):
+            self.parent = parent
+            self.value = value
+        def __matmul__(self, other):
+            return self.parent.callback(self.value, other)
+
+# 123 @then@ print
+# Result: prints 123  
+@CustomOperator
+def then(val, func):
+    return func(val)
+t = then
+
+# 123 @store@ 'asdf'
+# print(asdf)
+# Result: prints 123
+@CustomOperator
+def store(val, key):
+    globals()[key] = val
+    return val
+s = store
 
 ############################################
 # Functions involving Grouping 
@@ -40,6 +68,13 @@ def g_shortest_path_to_all_from_source(G, start):
                 queue.append((dist+1, neighbor))
                 ret[neighbor] = dist+1
     return ret
+
+def g_build_graph_from_2d_array_of_key_and_list_of_edges(arr):
+    G = {}
+    for k, v in arr:
+        G[k] = v
+    return G
+
 
 ############################################
 # Functions for Parsing strings (p_)
@@ -104,9 +139,9 @@ def r_intersect(a: range, b: range):
 ############################################
 # Functions involving matrices (m_)
 ############################################
-def m_print(arr: list):
+def m_print(arr: list, format=lambda id: id):
     for a in arr:
-        print(a)
+        print(format(a))
 
 ############################################
 # Functions involving dictionaries (d_)
@@ -115,6 +150,21 @@ def d_print(dic: list):
     for k in dic:
         print(k, dic[k])
 
+############################################
+# Infinite iterator
+############################################
+from typing import Iterable
+def inf_iter(a: Iterable):
+    while 1: yield from a
+
+
+############################################
+# SETUP
+############################################
+
+# Uncomment next line to disable prints
+# print = lambda *x: ...
+
 input_file = "input" if len(sys.argv) == 1 else sys.argv[1]
 raw_data = open(input_file).read()
 data = raw_data.strip().split("\n")
@@ -122,4 +172,13 @@ data = raw_data.strip().split("\n")
 height = len(data)
 width = len(data[0])
 
+############################################
+# Your Code
+############################################
 
+
+
+
+
+
+tot = 0

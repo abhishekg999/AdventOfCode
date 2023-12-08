@@ -1,25 +1,53 @@
 from functools import cache
 from collections import defaultdict, Counter, deque
-from queue import PriorityQueue
+from multiset import Multiset
 from math import *
 from ast import literal_eval
 import sys, os
 import re
 import string
-
-
-# Uncomment next line to disable prints
-# print = lambda *x: ...
+import inspect
 
 lowercase = string.ascii_lowercase
 uppercase = string.ascii_uppercase
+digits = string.digits
 
-
-def gen_split_after(sub: str):
+def gen_split_after(char: str):
     def inner(arr: str):
-        return arr[arr.index(sub) + len(sub):].strip()
+        return arr[arr.index(char) + len(char) :].strip()
     return inner
 a_colon = gen_split_after(":")
+
+############################################
+# Postfix (then)
+############################################
+class CustomOperator:
+    def __init__(self, callback):
+        self.callback = callback
+    def __rmatmul__(self, other):
+        return CustomOperator.I(self, other)
+    class I:
+        def __init__(self, parent, value):
+            self.parent = parent
+            self.value = value
+        def __matmul__(self, other):
+            return self.parent.callback(self.value, other)
+
+# 123 @then@ print
+# Result: prints 123  
+@CustomOperator
+def then(val, func):
+    return func(val)
+t = then
+
+# 123 @store@ 'asdf'
+# print(asdf)
+# Result: prints 123
+@CustomOperator
+def store(val, key):
+    globals()[key] = val
+    return val
+s = store
 
 ############################################
 # Functions involving Grouping 
@@ -40,6 +68,13 @@ def g_shortest_path_to_all_from_source(G, start):
                 queue.append((dist+1, neighbor))
                 ret[neighbor] = dist+1
     return ret
+
+def g_build_graph_from_2d_array_of_key_and_list_of_edges(arr):
+    G = {}
+    for k, v in arr:
+        G[k] = v
+    return G
+
 
 ############################################
 # Functions for Parsing strings (p_)
@@ -104,84 +139,61 @@ def r_intersect(a: range, b: range):
 ############################################
 # Functions involving matrices (m_)
 ############################################
-def m_print(arr: list):
+def m_print(arr: list, format=lambda id: id):
     for a in arr:
-        print(a)
+        print(format(a))
 
 ############################################
 # Functions involving dictionaries (d_)
 ############################################
-def d_print(dic: dict):
-    for a in dic:
-        print(a, dic[a])
+def d_print(dic: list):
+    for k in dic:
+        print(k, dic[k])
+
+############################################
+# Infinite iterator
+############################################
+from typing import Iterable
+def inf_iter(a: Iterable):
+    while 1: yield from a
+
+
+############################################
+# SETUP
+############################################
+
+# Uncomment next line to disable prints
+# print = lambda *x: ...
 
 input_file = "input" if len(sys.argv) == 1 else sys.argv[1]
 raw_data = open(input_file).read()
-data = raw_data.strip().split("\n")
+data = raw_data.split("\n")
 
 height = len(data)
 width = len(data[0])
 
-
-a = gen_split_after("Valve ")
-b = gen_split_after("to valves ")
-c = gen_split_after('to valve ')
-
-flow_rates = {}
-data = [x.split('; ') for x in data]
-for arr in data:
-    flow_rates[a(arr[0])[:2]] = int(arr[0].split('=')[-1])
-    arr[0] = a(arr[0])[:2]
-    try:
-        arr[1] = b(arr[1]).split(', ')
-    except: 
-        arr[1] = [c(arr[1])]
-
-graph = {}
-for k, v in data:
-    graph[k] = v
-
-dist_map = {}
-
-for k in graph:
-    spdict = g_shortest_path_to_all_from_source(graph, k)
-    print(spdict)
-    for d in spdict:
-        if flow_rates[d] > 0:
-            dist_map[k,d] = spdict[d] 
-
-print(dist_map)
-
-stack = []
-stack.append(('AA', 0, 0, set()))
-
-best = 0
-while stack:
-    # Now checking cur_pos, at time, having accumulated flow pressure, and opened seen
-    cur_pos, time, flow, seen = stack.pop()
-    
-    # 1 time step of flow with this many seen generates additional_flow count
-    additional_flow = sum(flow_rates[x] for x in seen)
-
-    # if the current flow is 
-    if flow > best:
-        best = flow
-    
-    visited_something = False
-    for neighbor in graph:
-        if neighbor not in seen and (cur_pos, neighbor) in dist_map:
-            distance = dist_map[cur_pos, neighbor]
-            if time + distance+1 > 30:
-                continue
-
-            _seen = seen.copy()
-            _seen.add(neighbor)
-            visited_something = True
-            stack.append((neighbor, time + distance+1, flow+((distance+1)*additional_flow), _seen))
-
-    # if there was nothing to visit, then we are done, just wait for the rest of the time
-    if not visited_something:
-        best = max(best, flow + ((30 - time)*additional_flow))
+############################################
+# Your Code
+############################################
 
 
-print(best)
+path = data[-1]
+data = data[:-2]
+
+width = [len(l) for l in data] @t@ max
+
+print(height, width)
+map = []
+for r in data:
+    map.append(list(r.ljust(width)))
+
+m_print(map, lambda r: ''.join(r))
+
+for i, c in data[0] @t@ enumerate:
+    if c == '.':
+        cur_position = (0, i)
+        break  
+
+
+
+tot = 0
