@@ -187,26 +187,6 @@ def b_modify_position(i, j):
         return 'X'
     return data[(i)][(j)]
 
-
-def validate(i, j):
-    match data[i][j]:
-        case '|':
-            return b_modify_position(i-1, j) in top_vert and b_modify_position(i+1, j) in bot_vert
-        case '-':
-            return b_modify_position(i, j+1) in righ_hor and b_modify_position(i, j-1) in left_hor 
-        case 'L':
-            return b_modify_position(i-1, j) in top_vert and b_modify_position(i, j+1) in righ_hor 
-        case 'J':
-            return b_modify_position(i-1, j) in top_vert and b_modify_position(i, j-1) in left_hor 
-        case '7':
-            return b_modify_position(i+1, j) in bot_vert and b_modify_position(i, j-1) in left_hor 
-        case 'F':
-            return b_modify_position(i+1, j) in bot_vert and b_modify_position(i, j+1) in righ_hor
-        case 'S':
-            return True
-        case '.':
-            return None 
-
 def valid_move(i, j, ni, nj):
     match data[i][j]:
         case '|':
@@ -250,20 +230,13 @@ def valid_move(i, j, ni, nj):
         case '.':
             return None     
 
-grid = []
-
 for i, row in enumerate(data):
-    cur = []
     for j, val in enumerate(row):
         if val == 'S':
             start = i, j
-        cur.append(validate(i, j).__str__()[0])
-    grid.append(cur)
+            break
 
 m_print(data)
-m_print(grid)
-
-
 
 queue = deque([])
 queue.append((start, 0, False))
@@ -282,7 +255,7 @@ while queue:
         if valid_move(i, j, ni, nj):
             if data[ni][nj] == 'S' and not come_from:
                 print((distance+1) // 2)
-                break
+                exit()
             
             if (ni, nj) in seen:
                 continue
@@ -290,10 +263,7 @@ while queue:
             queue.append(((ni, nj), distance+1, True if data[i][j] == 'S' else False))
             break
 
-
-
 for i, j in seen:
     another_map[i][j] = '#'
-
 
 m_print(another_map, lambda r: "".join(r))
