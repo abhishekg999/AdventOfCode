@@ -43,7 +43,7 @@ func init() {
 }
 
 func main() {
-	// part1()
+	part1()
 	part2()
 }
 
