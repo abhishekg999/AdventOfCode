@@ -72,14 +72,12 @@ func part1() {
 	sum := 0
 
 	for _, t := range starts {
-		sum += val(cache, t[0], t[1])
+		seen := set{}
+		sum += traverse(seen, t[0], t[1])
 	}
 
 	fmt.Println(sum)
 
-	for _, row := range cache {
-		fmt.Println(row)
-	}
 }
 
 var directions = [][2]int{
@@ -87,6 +85,24 @@ var directions = [][2]int{
 	{0, -1},
 	{1, 0},
 	{-1, 0},
+}
+
+func traverse(seen set, i int, j int) int {
+	if grid[i][j] == '9' && !seen[[2]int{i, j}] {
+		seen[[2]int{i, j}] = true
+		return 1
+	}
+	tot := 0
+	for _, t := range directions {
+		ni := i + t[0]
+		nj := j + t[1]
+
+		if 0 <= ni && ni < len(grid) && 0 <= nj && nj < len(grid[i]) && grid[i][j]+1 == grid[ni][nj] {
+			tot += traverse(seen, ni, nj)
+		}
+	}
+
+	return tot
 }
 
 func val(cache [][]int, i int, j int) int {
@@ -107,4 +123,25 @@ func val(cache [][]int, i int, j int) int {
 }
 
 func part2() {
+	starts := [][2]int{}
+	for i, line := range grid {
+		for j, val := range line {
+			if val == '0' {
+				starts = append(starts, [2]int{i, j})
+			}
+		}
+	}
+
+	cache := [][]int{}
+	for i := 0; i < len(grid); i++ {
+		cache = append(cache, slices.Repeat([]int{-1}, len(grid[i])))
+	}
+
+	sum := 0
+	for _, t := range starts {
+		sum += val(cache, t[0], t[1])
+	}
+
+	fmt.Println(sum)
+
 }
